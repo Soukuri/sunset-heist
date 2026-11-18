@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SUNSET HEIST — Solmar City</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #1a0f2e; font-family: "Trebuchet MS", Verdana, sans-serif; }
+  #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  .overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 20; }
+  .hidden { display: none !important; }
+  #startScreen { background: linear-gradient(160deg, rgba(26,10,46,.88), rgba(120,30,60,.82) 55%, rgba(255,120,40,.75)); color: #fff; text-align: center; }
+  #startScreen .panel { max-width: 640px; padding: 28px 36px; }
+  #startScreen h1 { font-size: 64px; margin: 0; letter-spacing: 4px; color: #ffd75e; text-shadow: 0 4px 0 #7a1f3d, 0 8px 24px rgba(0,0,0,.6); font-style: italic; }
+  #startScreen h2 { font-size: 18px; margin: 6px 0 14px; color: #ffe9b0; letter-spacing: 6px; text-transform: uppercase; }
+  #startScreen p { font-size: 15px; line-height: 1.55; color: #fff3d6; }
+  #startScreen .controls { font-size: 13px; color: #ffd9a0; line-height: 1.8; margin: 14px 0; }
+  #playBtn, #resumeBtn, #restartBtn, #menuBtn { font-family: inherit; font-size: 20px; font-weight: bold; color: #2a0a1e; background: #ffd75e; border: 0; border-radius: 10px; padding: 12px 34px; cursor: pointer; box-shadow: 0 4px 0 #b8860b; margin: 6px; }
+  #playBtn:hover, #resumeBtn:hover, #restartBtn:hover, #menuBtn:hover { background: #ffe28a; }
+  #pauseScreen, #gameOverScreen { background: rgba(10, 5, 20, .72); color: #fff; text-align: center; }
+  #pauseScreen h1, #gameOverScreen h1 { font-size: 44px; margin: 0 0 10px; color: #ffd75e; letter-spacing: 3px; }
+  #pauseScreen p, #gameOverScreen p { color: #ffe9b0; font-size: 16px; }
+  #hud { position: fixed; inset: 0; pointer-events: none; z-index: 10; font-family: "Trebuchet MS", Verdana, sans-serif; }
+  #stars { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); font-size: 30px; letter-spacing: 4px; color: #ffd75e; text-shadow: 0 2px 6px rgba(0,0,0,.8); }
+  #stars .off { color: rgba(255,255,255,.28); }
+  #objective { position: absolute; top: 52px; left: 50%; transform: translateX(-50%); background: rgba(10,5,20,.72); color: #ffe9b0; padding: 8px 16px; border-radius: 8px; font-size: 15px; border: 1px solid rgba(255,215,94,.5); max-width: 560px; text-align: center; }
+  #cashBox { position: absolute; top: 12px; right: 16px; text-align: right; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,.8); }
+  #cash { font-size: 28px; font-weight: bold; color: #7dff8a; }
+  #cashLabel { font-size: 11px; letter-spacing: 2px; color: #ffe9b0; }
+  #healthBox { position: absolute; bottom: 16px; right: 16px; width: 220px; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,.8); }
+  #healthLabel { font-size: 12px; letter-spacing: 2px; margin-bottom: 4px; }
+  #healthBarOuter { height: 16px; background: rgba(0,0,0,.55); border-radius: 8px; border: 1px solid rgba(255,255,255,.4); overflow: hidden; }
+  #healthBar { height: 100%; width: 100%; background: linear-gradient(90deg, #ff5a5a, #ff9a3d); }
+  #speedBox { position: absolute; bottom: 52px; right: 16px; color: #fff; font-size: 22px; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,.8); }
+  #minimap { position: absolute; left: 16px; bottom: 16px; width: 190px; height: 190px; border-radius: 50%; border: 3px solid rgba(255,215,94,.85); background: rgba(12,8,28,.85); box-shadow: 0 4px 18px rgba(0,0,0,.6); }
+  #minimapLabel { position: absolute; left: 22px; bottom: 212px; color: #ffe9b0; font-size: 11px; letter-spacing: 3px; text-shadow: 0 2px 4px rgba(0,0,0,.8); }
+  #messageFeed { position: absolute; left: 220px; bottom: 64px; max-width: 420px; color: #fff; font-size: 14px; text-shadow: 0 2px 4px rgba(0,0,0,.9); line-height: 1.5; }
+  #messageFeed div { margin-top: 4px; }
+  #crosshair { position: absolute; left: 50%; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px; }
+  #crosshair:before, #crosshair:after { content: ""; position: absolute; background: rgba(255,255,255,.9); box-shadow: 0 0 4px #000; }
+  #crosshair:before { left: 8px; top: 0; width: 2px; height: 18px; }
+  #crosshair:after { top: 8px; left: 0; width: 18px; height: 2px; }
+  #hint { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,.85); font-size: 13px; text-shadow: 0 2px 4px rgba(0,0,0,.9); background: rgba(0,0,0,.4); padding: 5px 12px; border-radius: 6px; }
+  #timerBox { position: absolute; top: 100px; left: 50%; transform: translateX(-50%); color: #fff; font-size: 22px; font-weight: bold; text-shadow: 0 2px 6px rgba(0,0,0,.9); }
+  #status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+</style>
+</head>
+<body>
+<canvas id="game" aria-label="SUNSET HEIST: explore Solmar City on foot and by car, steal cars, outrun the police and finish missions"></canvas>
+<div id="hud" class="hidden">
+  <div id="stars"></div>
+  <div id="objective"></div>
+  <div id="timerBox"></div>
+  <div id="cashBox"><div id="cashLabel">CASH</div><div id="cash">$0</div></div>
+  <div id="healthBox"><div id="healthLabel">HEALTH</div><div id="healthBarOuter"><div id="healthBar"></div></div></div>
+  <div id="speedBox"></div>
+  <div id="minimapLabel">SOLMAR CITY</div>
+  <canvas id="minimap" width="190" height="190"></canvas>
+  <div id="messageFeed"></div>
+  <div id="crosshair" class="hidden"></div>
+  <div id="hint"></div>
+</div>
+<div id="startScreen" class="overlay">
+  <div class="panel">
+    <h1>SUNSET HEIST</h1>
+    <h2>Solmar City &middot; An Open-World Crime Story</h2>
+    <p>You are <b>Rico Vane</b>, a wheelman fresh out of the game — until the Marlow crew
+    steals your ride and your reputation in one night. Take back the streets of Solmar City:
+    steal cars, outrun the Harbor Patrol, and run three jobs for fixer <b>Mama June</b> to earn
+    your name back before sunrise.</p>
+    <div class="controls">
+      WASD move / drive &nbsp;&middot;&nbsp; Mouse look &amp; aim (click to lock) &nbsp;&middot;&nbsp; Shift run<br>
+      E enter / exit car &nbsp;&middot;&nbsp; Space handbrake &nbsp;&middot;&nbsp; Click shoot &nbsp;&middot;&nbsp; P pause &nbsp;&middot;&nbsp; M mute
+    </div>
+    <button id="playBtn">START THE HEIST</button>
+    <p id="saveLine" style="font-size:13px;color:#ffe9b0"></p>
+  </div>
+</div>
+<div id="pauseScreen" class="overlay hidden">
+  <div>
+    <h1>PAUSED</h1>
+    <p>Solmar City waits for no one. Well — except right now.</p>
+    <button id="resumeBtn">RESUME</button>
+    <button id="menuBtn">QUIT TO TITLE</button>
+  </div>
+</div>
+<div id="gameOverScreen" class="overlay hidden">
+  <div>
+    <h1 id="gameOverTitle">BUSTED</h1>
+    <p id="gameOverText">The Harbor Patrol caught up with you.</p>
+    <button id="restartBtn">TRY AGAIN</button>
+  </div>
+</div>
+<p id="status" role="status" aria-live="polite"></p>
+<script src="./vendor/three.min.js"></script>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
